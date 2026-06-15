@@ -162,7 +162,7 @@ Compétences attendues :
 - Problématique : Définir la problématique spécifique à résoudre.
 ##    
 **Méthodologie (4 points)**
-- Conception de la chaîne : Acquisition → annotation → stockage → traitement des données,  
+- Conception de la chaîne : Acquisition → annotation → stockage → traitement des données (Optionnelle, mais valorisante)  
 - Pertinences des caractéristiques et des règles de classification choisies.
 ##     
 **Implémentation et expérimentation (5 points)**  
