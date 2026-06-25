@@ -30,9 +30,11 @@ def get_image_color_stats(image):
     min_b = 255
     avg_b = 0
 
+    img_size = get_image_size(image)
+
     for x in range(img_size[0]):
         for y in range(img_size[1]):
-            pixel = img.getpixel((x, y))
+            pixel = image.getpixel((x, y))
 
             if pixel[0] > max_r:
                 max_r = pixel[0]

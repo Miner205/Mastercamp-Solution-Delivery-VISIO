@@ -1,68 +1,86 @@
-import streamlit as st
-import os
-from datetime import datetime
-import sqlite3
 import pandas as pd
+import os
+import sqlite3
+import streamlit as st
+from streamlit_option_menu import option_menu
 
-from database import create_database, insert_image
+from views import accueil, historique, statistiques, gallery
+from database import create_database
+
 #from metadata import extract_metadata
+
 
 DB_NAME = "visio_database.db"
 
+if not os.path.isfile(DB_NAME):
+    create_database()
 
-create_database()
-
-DATA_FOLDER = "Data/myTests"
+DATA_FOLDER = "Data/web_app"
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
 
-st.title("Web App VISIO - Wild Dump Prevention")
-st.subheader("Détection de l'état des poubelles")
+st.set_page_config(layout="wide")
 
-uploaded_file = st.file_uploader("Choisir une image", type=["jpg", "jpeg", "png"])
-
-if uploaded_file:
-    filepath = os.path.join(DATA_FOLDER, uploaded_file.name)
-
-    with open(filepath, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    st.success("Image enregistrée.")
-    st.image(filepath)  #, width=500)
-
-    col1, col2 = st.columns(2)
-    annotation = None
-    with col1:
-        if st.button("🟢 Vide"):
-            annotation = "Vide"
-    with col2:
-        if st.button("🔴 Pleine"):
-            annotation = "Pleine"
-
-    '''if annotation:
-        metadata = extract_metadata(filepath)
-        insert_image((
-            uploaded_file.name,
-            filepath,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            annotation,
-            metadata["file_size"],
-            metadata["width"],
-            metadata["height"],
-            metadata["avg_r"],
-            metadata["avg_g"],
-            metadata["avg_b"]
-        ))
-        st.success(
-            f"Annotation '{annotation}' enregistrée."
-        )'''
+st.markdown("""
+<style>
+.main {
+    background-color: #F7FAF7;
+}
+.block-container {
+    padding-top: 2rem;
+}
+.card {
+    background:white;
+    padding:20px;
+    border-radius:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+.green-title {
+    color:#1B5E20;
+    font-size:32px;
+    font-weight:700;
+}
+.result-ok {
+    color:#1B5E20;
+    font-size:30px;
+    font-weight:700;
+}
+.result-full {
+    color:#E53935;
+    font-size:30px;
+    font-weight:700;
+}
+</style>
+""", unsafe_allow_html=True)
 
 
+with st.sidebar:
+    selected = option_menu(
+        "VISIO",
+        ["Accueil - Upload",
+                "Gallery",
+                "Historique",
+                "Statistiques",
+                "À propos"],
+        icons=["house",
+                "image",
+                "clock-history",
+                "bar-chart",
+                "info-circle"],
+        default_index=0
+    )
 
-st.divider()
-st.subheader("Historique des annotations")
-conn = sqlite3.connect(DB_NAME)
-df = pd.read_sql_query("SELECT * FROM images", conn)
-st.dataframe(df)
-conn.close()
+
+if selected == "Accueil - Upload":
+    accueil.show()
+elif selected == "Historique":
+    historique.show()
+elif selected == "Statistiques":
+    statistiques.show()
+elif selected == "Gallery":
+    gallery.show()
+
+
+#st.divider()
+
 

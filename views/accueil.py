@@ -1,0 +1,67 @@
+from datetime import datetime
+import os
+import streamlit as st
+
+from database import insert_image, update_manual_annotation, image_hash_exists, compute_uploaded_file_hash
+import features_extraction
+
+
+DB_NAME = "visio_database.db"
+DATA_FOLDER = "Data/web_app"
+
+
+def show():
+    st.title("Web App VISIO - Wild Dump Prevention")
+    st.subheader("Détection de l'état des poubelles")
+
+    st.markdown("""
+        <div class='green-title'>
+        Une ville plus propre,
+        des déchets mieux gérés.
+        </div>
+        """,
+                unsafe_allow_html=True)
+
+    # st.image("assets/hero.png")
+
+    st.markdown("""<div><br><br></div>""", unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("Déposer une image de poubelle", type=["jpg", "jpeg", "png"])
+
+    if uploaded_file:
+        filepath = os.path.join(DATA_FOLDER, uploaded_file.name)
+
+        img_hash = compute_uploaded_file_hash(uploaded_file)
+        annotation = None
+
+        if image_hash_exists(img_hash):
+            st.error("Cette image est déjà présente dans la database.")
+        else:
+            with open(filepath, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+
+            st.success("Image enregistrée.")
+
+            insert_image((
+                uploaded_file.name,
+                img_hash,
+                filepath,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                annotation,
+                None,
+                None,
+                features_extraction.get_file_size(filepath),
+                features_extraction.get_image_size(features_extraction.get_image(filepath))[0],
+                features_extraction.get_image_size(features_extraction.get_image(filepath))[1],
+                features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[0],
+                features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[1],
+                features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[2]
+            ))
+
+        st.image(filepath)
+
+        annotation = st.radio("annotation manuelle", [None, "Vide", "Pleine"])
+        if annotation:
+            update_manual_annotation(annotation, img_hash)
+            st.success(
+                f"Annotation '{annotation}' enregistrée."
+            )
