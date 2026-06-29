@@ -13,4 +13,10 @@ OR you can also create a new pycharm run configuration to run it using :
 
 
 # Prerequisites :
+pip install pandas
+pip install streamlit
+pip install streamlit-option-menu
+pip install streamlit-extras
+pip install pillow
 pip install "rembg[gpu]" (for Nvidia) or pip install "rembg[cpu]" or ... cf here https://github.com/danielgatis/rembg#installation
+...

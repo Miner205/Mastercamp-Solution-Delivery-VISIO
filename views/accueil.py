@@ -63,16 +63,18 @@ def show():
             with center_col2:
                 st.image(filepath, width="stretch")
 
-                st.subheader("annotation manuelle")
-                col1, col2 = st.columns([2, 10])
-                annotation = None
-                with col1:
-                    if st.button("🟢 Vide"):
-                        annotation = "Vide"
-                with col2:
-                    if st.button("🔴 Pleine"):
-                        annotation = "Pleine"
+                left_col3, center_col3, right_col3 = st.columns(3)
+                with center_col3:
+                    st.subheader("annotation manuelle")
+                    col1, col2 = st.columns(2)
+                    annotation = None
+                    with col1:
+                        if st.button("🟢 Vide"):
+                            annotation = "Vide"
+                    with col2:
+                        if st.button("🔴 Pleine"):
+                            annotation = "Pleine"
 
-                if annotation:
-                    update_manual_annotation(annotation, img_hash)
-                    st.success(f"Annotation '{annotation}' enregistrée.")
+                    if annotation:
+                        update_manual_annotation(annotation, img_hash)
+                        st.success(f"Annotation '{annotation}' enregistrée.")
