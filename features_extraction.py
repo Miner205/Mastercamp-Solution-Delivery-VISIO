@@ -4,7 +4,7 @@ import os
 from PIL import Image, ExifTags
 from rembg import remove
 
-default_image_path = ("Data/train/with_label/dirty/838.full.jpeg")
+default_image_path = ("Data/test/WhatsApp Image 2020-09-30 at 4.07.03 PM.jpeg")
 
 
 def get_file_size(image_path):
@@ -32,10 +32,10 @@ def get_image_color_stats(image):
     min_b = 255
     avg_b = 0
 
-    image_size = image.size
+    width, height = image.size
 
-    for x in range(image_size[0]):
-        for y in range(image_size[1]):
+    for x in range(width):
+        for y in range(height):
             pixel = image.getpixel((x, y))
 
             if pixel[0] > max_r:
@@ -56,7 +56,8 @@ def get_image_color_stats(image):
                 min_b = pixel[2]
             avg_b += pixel[2]
 
-    return avg_r/(image_size[0] * image_size[1]), avg_g/(image_size[0] * image_size[1]), avg_b/(image_size[0] * image_size[1]), (min_r, max_r), (min_g, max_g), (min_b, max_b)
+    nb_pixels = width*height
+    return avg_r/nb_pixels, avg_g/nb_pixels, avg_b/nb_pixels, (min_r, max_r), (min_g, max_g), (min_b, max_b)
 
 
 def get_image_l(image):
@@ -111,30 +112,81 @@ def compute_nb_area():
     pass
 
 
-def create_bin_image(image, bin_mask, nb_x_area, nb_y_area):
+def create_bin_image_old(image, bin_mask, nb_x_area, nb_y_area, area_border=False):
     width, height = image.size
     bin_image = Image.new("RGBA", (width, height))
     area_width = width//nb_x_area
     area_height = height//nb_y_area
+
     above_area_value = 0
     area_value = 0
+
     for area_x in range(nb_x_area):
         for area_y in range(nb_y_area):
 
             for x in range(area_width):
                 for y in range(area_height):
-                    area_value += (bin_mask.getpixel((area_width*area_x + x, area_height*area_y + y))/255)
+                    area_value += bin_mask.getpixel((area_width*area_x + x, area_height*area_y + y))//255
 
             if area_value >= (area_width*area_height)/8 or above_area_value >= (area_width*area_height)/4:
                 for x in range(area_width):
                     for y in range(area_height):
-                        if y == area_height - 1 or x == area_width - 1:
+                        if area_border is True and (y == area_height - 1 or x == area_width - 1):
                             bin_image.putpixel((area_width*area_x + x, area_height * area_y + y), (255, 0, 255, 255))
                         else:
                             bin_image.putpixel((area_width*area_x + x, area_height*area_y + y), image.getpixel((area_width*area_x + x, area_height*area_y + y)))
 
             above_area_value = area_value
             area_value = 0
+
+    return bin_image
+
+
+def contour_matrix_test(image, bin_mask, nb_x_area, nb_y_area):
+    width, height = image.size
+    contour_matrix = [[0 for _ in range(nb_y_area)] for _ in range(nb_x_area)]
+    area_width = width//nb_x_area
+    area_height = height//nb_y_area
+
+    for area_x in range(nb_x_area):
+        for area_y in range(nb_y_area):
+
+            for x in range(area_width):
+                for y in range(area_height):
+                    contour_matrix[area_y][area_x] += bin_mask.getpixel((area_width*area_x + x, area_height*area_y + y))//255
+            contour_matrix[area_y][area_x] = (contour_matrix[area_y][area_x]*8)//(area_width*area_height)
+
+    for distance in range(7):
+        for area_x in range(nb_x_area):
+            for area_y in range(nb_y_area):
+                if area_y > 0 and contour_matrix[area_y][area_x] < contour_matrix[area_y - 1][area_x] - 2:
+                    contour_matrix[area_y][area_x] = contour_matrix[area_y - 1][area_x] - 1
+                if area_x > 0 and contour_matrix[area_y][area_x] < contour_matrix[area_y][area_x - 1] - 4:
+                    contour_matrix[area_y][area_x] = contour_matrix[area_y][area_x - 1] - 2
+                if area_x < nb_x_area - 1 and contour_matrix[area_y][area_x] < contour_matrix[area_y][area_x + 1] - 4:
+                    contour_matrix[area_y][area_x] = contour_matrix[area_y][area_x + 1] - 2
+                if area_y < nb_y_area - 1 and contour_matrix[area_y][area_x] < contour_matrix[area_y + 1][area_x] - 6:
+                    contour_matrix[area_y][area_x] = contour_matrix[area_y + 1][area_x] - 3
+
+    return contour_matrix
+
+
+def create_bin_image(image, contour_matrix, nb_x_area, nb_y_area, area_border=False):
+    width, height = image.size
+    bin_image = Image.new("RGBA", (width, height))
+    area_width = width//nb_x_area
+    area_height = height//nb_y_area
+
+    for area_x in range(nb_x_area):
+        for area_y in range(nb_y_area):
+
+            if contour_matrix[area_y][area_x] > 0:
+                for x in range(area_width):
+                    for y in range(area_height):
+                        if area_border is True and (y == area_height - 1 or x == area_width - 1):
+                            bin_image.putpixel((area_width*area_x + x, area_height * area_y + y), (255, 0, 255, 255))
+                        else:
+                            bin_image.putpixel((area_width*area_x + x, area_height*area_y + y), image.getpixel((area_width*area_x + x, area_height*area_y + y)))
 
     return bin_image
 
@@ -174,7 +226,8 @@ if __name__ == '__main__':
     msk_bin = create_bin_mask(img_no_bg)
     msk_bin.show()
 
-    img_bin = create_bin_image(img, msk_bin, 8, 8)
-    img_bin.show()
+    bin_matrix = contour_matrix_test(img, msk_bin, 8, 8)
 
+    img_bin = create_bin_image(img, bin_matrix, 8, 8)
+    img_bin.show()
 
