@@ -1,8 +1,10 @@
+import math
 import os
+# TODO: ExifTags?
 from PIL import Image, ExifTags
 from rembg import remove
 
-default_image_path = "Data/train/with_label/dirty/4d7b8b72cd8cfd0b7cad769e3929e0cc37ba3581.temp.jpeg"
+default_image_path = ("Data/train/with_label/dirty/838.full.jpeg")
 
 
 def get_file_size(image_path):
@@ -10,7 +12,7 @@ def get_file_size(image_path):
 
 
 def get_image(image_path):
-    return Image.open(default_image_path)
+    return Image.open(image_path)
 
 
 def get_image_size(image):
@@ -30,9 +32,11 @@ def get_image_color_stats(image):
     min_b = 255
     avg_b = 0
 
-    for x in range(img_size[0]):
-        for y in range(img_size[1]):
-            pixel = img.getpixel((x, y))
+    image_size = image.size
+
+    for x in range(image_size[0]):
+        for y in range(image_size[1]):
+            pixel = image.getpixel((x, y))
 
             if pixel[0] > max_r:
                 max_r = pixel[0]
@@ -52,7 +56,7 @@ def get_image_color_stats(image):
                 min_b = pixel[2]
             avg_b += pixel[2]
 
-    return avg_r/(img_size[0] * img_size[1]), avg_g/(img_size[0] * img_size[1]), avg_b/(img_size[0] * img_size[1]), (min_r, max_r), (min_g, max_g), (min_b, max_b)
+    return avg_r/(image_size[0] * image_size[1]), avg_g/(image_size[0] * image_size[1]), avg_b/(image_size[0] * image_size[1]), (min_r, max_r), (min_g, max_g), (min_b, max_b)
 
 
 def get_image_l(image):
@@ -64,9 +68,11 @@ def get_image_l_stats(image):
     min_l = 255
     avg_l = 0
 
-    for x in range(img_size[0]):
-        for y in range(img_size[1]):
-            pixel = img_l.getpixel((x, y))
+    image_size = image.size
+
+    for x in range(image_size[0]):
+        for y in range(image_size[1]):
+            pixel = image.getpixel((x, y))
 
             if pixel > max_l:
                 max_l = pixel
@@ -74,7 +80,7 @@ def get_image_l_stats(image):
                 min_l = pixel
             avg_l += pixel
 
-    return avg_l/(img_size[0] * img_size[1]), (min_l, max_l)
+    return avg_l/(image_size[0] * image_size[1]), (min_l, max_l)
 
 
 def get_image_histogram(image):
@@ -85,11 +91,60 @@ def get_image_l_contrast(max_l, min_l, avg_l):
     return (max_l - min_l)/avg_l
 
 
+def get_hue_pixel(image, x, y):
+    r, g, b = image.getpixel((x, y))[0:3]
+    return math.atan2(math.sqrt(3)*(g - b), 2*r - g - b)*(180/math.pi)
+
+
+def create_bin_mask(image):
+    width, height = image.size
+    bin_mask = Image.new("L", (width, height))
+    for x in range(width):
+        for y in range(height):
+            pixel_hue = get_hue_pixel(image, x, y)
+            if 60 <= pixel_hue <= 180:
+                bin_mask.putpixel((x, y), 255)
+    return bin_mask
+
+
+def compute_nb_area():
+    pass
+
+
+def create_bin_image(image, bin_mask, nb_x_area, nb_y_area):
+    width, height = image.size
+    bin_image = Image.new("RGBA", (width, height))
+    area_width = width//nb_x_area
+    area_height = height//nb_y_area
+    above_area_value = 0
+    area_value = 0
+    for area_x in range(nb_x_area):
+        for area_y in range(nb_y_area):
+
+            for x in range(area_width):
+                for y in range(area_height):
+                    area_value += (bin_mask.getpixel((area_width*area_x + x, area_height*area_y + y))/255)
+
+            if area_value >= (area_width*area_height)/8 or above_area_value >= (area_width*area_height)/4:
+                for x in range(area_width):
+                    for y in range(area_height):
+                        if y == area_height - 1 or x == area_width - 1:
+                            bin_image.putpixel((area_width*area_x + x, area_height * area_y + y), (255, 0, 255, 255))
+                        else:
+                            bin_image.putpixel((area_width*area_x + x, area_height*area_y + y), image.getpixel((area_width*area_x + x, area_height*area_y + y)))
+
+            above_area_value = area_value
+            area_value = 0
+
+    return bin_image
+
+
 if __name__ == '__main__':
     file_size = get_file_size(default_image_path)
     print(file_size)
     img = get_image(default_image_path)
     img.show()
+    img.save("base.png")
     #exif = {ExifTags.TAGS[k]: v for k, v in img.getexif().items() if k in ExifTags.TAGS}
     #print(exif)
     img_size = get_image_size(img)
@@ -114,5 +169,16 @@ if __name__ == '__main__':
     contrast = get_image_l_contrast(max_l, min_l, avg_l)
     print(contrast)
 
-    result = remove(img)
-    result.show()
+    img_no_bg = remove(img)
+    img_no_bg.show()
+    img_no_bg.save("no_bg.png")
+
+    msk_bin = create_bin_mask(img_no_bg)
+    msk_bin.show()
+    msk_bin.save("mask.png")
+
+    img_bin = create_bin_image(img, msk_bin, 8, 8)
+    img_bin.show()
+    img_bin.save("poubelle.png")
+
+
