@@ -144,7 +144,6 @@ if __name__ == '__main__':
     print(file_size)
     img = get_image(default_image_path)
     img.show()
-    img.save("base.png")
     #exif = {ExifTags.TAGS[k]: v for k, v in img.getexif().items() if k in ExifTags.TAGS}
     #print(exif)
     img_size = get_image_size(img)
@@ -171,14 +170,11 @@ if __name__ == '__main__':
 
     img_no_bg = remove(img)
     img_no_bg.show()
-    img_no_bg.save("no_bg.png")
 
     msk_bin = create_bin_mask(img_no_bg)
     msk_bin.show()
-    msk_bin.save("mask.png")
 
     img_bin = create_bin_image(img, msk_bin, 8, 8)
     img_bin.show()
-    img_bin.save("poubelle.png")
 
 
