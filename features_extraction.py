@@ -4,7 +4,7 @@ import os
 from PIL import Image, ExifTags
 from rembg import remove
 
-default_image_path = ("Data/test/WhatsApp Image 2020-09-30 at 4.07.03 PM.jpeg")
+default_image_path = ("Data/train/with_label/dirty/838.full.jpeg")
 
 
 def get_file_size(image_path):
@@ -153,20 +153,20 @@ def contour_matrix_test(image, bin_mask, nb_x_area, nb_y_area):
 
             for x in range(area_width):
                 for y in range(area_height):
-                    contour_matrix[area_y][area_x] += bin_mask.getpixel((area_width*area_x + x, area_height*area_y + y))//255
-            contour_matrix[area_y][area_x] = (contour_matrix[area_y][area_x]*8)//(area_width*area_height)
+                    contour_matrix[area_x][area_y] += bin_mask.getpixel((area_width*area_x + x, area_height*area_y + y))//255
+            contour_matrix[area_x][area_y] = (contour_matrix[area_x][area_y]*8)//(area_width*area_height)
 
     for distance in range(7):
         for area_x in range(nb_x_area):
             for area_y in range(nb_y_area):
-                if area_y > 0 and contour_matrix[area_y][area_x] < contour_matrix[area_y - 1][area_x] - 2:
-                    contour_matrix[area_y][area_x] = contour_matrix[area_y - 1][area_x] - 1
-                if area_x > 0 and contour_matrix[area_y][area_x] < contour_matrix[area_y][area_x - 1] - 4:
-                    contour_matrix[area_y][area_x] = contour_matrix[area_y][area_x - 1] - 2
-                if area_x < nb_x_area - 1 and contour_matrix[area_y][area_x] < contour_matrix[area_y][area_x + 1] - 4:
-                    contour_matrix[area_y][area_x] = contour_matrix[area_y][area_x + 1] - 2
-                if area_y < nb_y_area - 1 and contour_matrix[area_y][area_x] < contour_matrix[area_y + 1][area_x] - 6:
-                    contour_matrix[area_y][area_x] = contour_matrix[area_y + 1][area_x] - 3
+                if area_y > 0 and contour_matrix[area_x][area_y] < contour_matrix[area_x][area_y - 1] - 2:
+                    contour_matrix[area_x][area_y] = contour_matrix[area_x][area_y - 1] - 1
+                if area_x > 0 and contour_matrix[area_x][area_y] < contour_matrix[area_x - 1][area_y] - 4:
+                    contour_matrix[area_x][area_y] = contour_matrix[area_x - 1][area_y] - 2
+                if area_x < nb_x_area - 1 and contour_matrix[area_x][area_y] < contour_matrix[area_x + 1][area_y] - 4:
+                    contour_matrix[area_x][area_y] = contour_matrix[area_x + 1][area_y] - 2
+                if area_y < nb_y_area - 1 and contour_matrix[area_x][area_y] < contour_matrix[area_x][area_y + 1] - 6:
+                    contour_matrix[area_x][area_y] = contour_matrix[area_x][area_y + 1] - 3
 
     return contour_matrix
 
@@ -180,7 +180,7 @@ def create_bin_image(image, contour_matrix, nb_x_area, nb_y_area, area_border=Fa
     for area_x in range(nb_x_area):
         for area_y in range(nb_y_area):
 
-            if contour_matrix[area_y][area_x] > 0:
+            if contour_matrix[area_x][area_y] > 0:
                 for x in range(area_width):
                     for y in range(area_height):
                         if area_border is True and (y == area_height - 1 or x == area_width - 1):
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     print(avg_l)
     print(min_l, max_l)
 
-    img_histogram = get_image_histogram(img)
+    img_histogram = get_image_histogram(img_l)
     print(img_histogram)
 
     contrast = get_image_l_contrast(max_l, min_l, avg_l)
@@ -227,6 +227,7 @@ if __name__ == '__main__':
     msk_bin.show()
 
     bin_matrix = contour_matrix_test(img, msk_bin, 8, 8)
+    print(bin_matrix)
 
     img_bin = create_bin_image(img, bin_matrix, 8, 8)
     img_bin.show()
