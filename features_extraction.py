@@ -10,7 +10,7 @@ def get_file_size(image_path):
 
 
 def get_image(image_path):
-    return Image.open(default_image_path)
+    return Image.open(image_path)
 
 
 def get_image_size(image):

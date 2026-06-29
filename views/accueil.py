@@ -11,57 +11,68 @@ DATA_FOLDER = "Data/web_app"
 
 
 def show():
-    st.title("Web App VISIO - Wild Dump Prevention")
-    st.subheader("Détection de l'état des poubelles")
+    left_col, center_col, right_col = st.columns([1, 10, 1])
+    with center_col:
+        st.title("Web App VISIO - Wild Dump Prevention")
+        st.subheader("Détection de l'état des poubelles")
 
-    st.markdown("""
-        <div class='green-title'>
-        Une ville plus propre,
-        des déchets mieux gérés.
-        </div>
-        """,
-                unsafe_allow_html=True)
+        st.markdown("""
+            <div class='green-title'>
+            Une ville plus propre,
+            des déchets mieux gérés.
+            </div>
+            """,
+                    unsafe_allow_html=True)
 
-    # st.image("assets/hero.png")
+        # st.image("assets/hero.png")
 
-    st.markdown("""<div><br><br></div>""", unsafe_allow_html=True)
-    uploaded_file = st.file_uploader("Déposer une image de poubelle", type=["jpg", "jpeg", "png"])
+        st.markdown("""<div><br><br></div>""", unsafe_allow_html=True)
+        uploaded_file = st.file_uploader("Déposer une image de poubelle", type=["jpg", "jpeg", "png"])
 
-    if uploaded_file:
-        filepath = os.path.join(DATA_FOLDER, uploaded_file.name)
+        if uploaded_file:
+            filepath = os.path.join(DATA_FOLDER, uploaded_file.name)
 
-        img_hash = compute_uploaded_file_hash(uploaded_file)
-        annotation = None
+            img_hash = compute_uploaded_file_hash(uploaded_file)
+            annotation = None
 
-        if image_hash_exists(img_hash):
-            st.error("Cette image est déjà présente dans la database.")
-        else:
-            with open(filepath, "wb") as f:
-                f.write(uploaded_file.getbuffer())
+            if image_hash_exists(img_hash):
+                st.error("Cette image est déjà présente dans la database.")
+            else:
+                with open(filepath, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
 
-            st.success("Image enregistrée.")
+                st.success("Image enregistrée.")
 
-            insert_image((
-                uploaded_file.name,
-                img_hash,
-                filepath,
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                annotation,
-                None,
-                None,
-                features_extraction.get_file_size(filepath),
-                features_extraction.get_image_size(features_extraction.get_image(filepath))[0],
-                features_extraction.get_image_size(features_extraction.get_image(filepath))[1],
-                features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[0],
-                features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[1],
-                features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[2]
-            ))
+                insert_image((
+                    uploaded_file.name,
+                    img_hash,
+                    filepath,
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    annotation,
+                    None,
+                    None,
+                    features_extraction.get_file_size(filepath),
+                    features_extraction.get_image_size(features_extraction.get_image(filepath))[0],
+                    features_extraction.get_image_size(features_extraction.get_image(filepath))[1],
+                    features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[0],
+                    features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[1],
+                    features_extraction.get_image_color_stats(features_extraction.get_image(filepath))[2]
+                ))
 
-        st.image(filepath)
+            left_col2, center_col2, right_col2 = st.columns([1, 10, 1])
+            with center_col2:
+                st.image(filepath, width="stretch")
 
-        annotation = st.radio("annotation manuelle", [None, "Vide", "Pleine"])
-        if annotation:
-            update_manual_annotation(annotation, img_hash)
-            st.success(
-                f"Annotation '{annotation}' enregistrée."
-            )
+                st.subheader("annotation manuelle")
+                col1, col2 = st.columns([2, 10])
+                annotation = None
+                with col1:
+                    if st.button("🟢 Vide"):
+                        annotation = "Vide"
+                with col2:
+                    if st.button("🔴 Pleine"):
+                        annotation = "Pleine"
+
+                if annotation:
+                    update_manual_annotation(annotation, img_hash)
+                    st.success(f"Annotation '{annotation}' enregistrée.")
