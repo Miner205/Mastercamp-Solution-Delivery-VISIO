@@ -6,7 +6,6 @@ from database import insert_image, update_manual_annotation, image_hash_exists, 
 import features_extraction
 
 
-DB_NAME = "visio_database.db"
 DATA_FOLDER = "Data/web_app"
 
 
@@ -75,6 +74,6 @@ def show():
                         if st.button("🔴 Pleine"):
                             annotation = "Pleine"
 
-                    if annotation:
-                        update_manual_annotation(annotation, img_hash)
-                        st.success(f"Annotation '{annotation}' enregistrée.")
+            if annotation:
+                update_manual_annotation(annotation, img_hash)
+                st.success(f"Annotation '{annotation}' enregistrée.")

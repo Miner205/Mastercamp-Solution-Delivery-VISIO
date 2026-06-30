@@ -17,6 +17,7 @@ pip install pandas
 pip install streamlit
 pip install streamlit-option-menu
 pip install streamlit-extras
+pip install streamlit-scroll-to-top
 pip install pillow
 pip install "rembg[gpu]" (for Nvidia) or pip install "rembg[cpu]" or ... cf here https://github.com/danielgatis/rembg#installation
 ...

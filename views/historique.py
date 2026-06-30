@@ -1,12 +1,9 @@
-import os
+from datetime import date
+from dateutil.relativedelta import relativedelta
 import pandas as pd
-import sqlite3
 import streamlit as st
 
 from database import get_db_as_df
-
-DB_NAME = "visio_database.db"
-DATA_FOLDER = "Data/web_app"
 
 
 def show():
@@ -27,7 +24,7 @@ def show():
     with col4:
         confidence = st.slider("Confiance IA minimale (%)", 0, 100, 0)
     with col5:
-        start_date = st.date_input("Du")
+        start_date = st.date_input("Du", value=date.today()-relativedelta(months=1))
     with col6:
         end_date = st.date_input("Au")
 
@@ -42,7 +39,7 @@ def show():
                 "Annotation IA",
                 "Annotation manuelle"])
     with col8:
-        ascending = st.checkbox("Ordre croissant", value=False)
+        ascending = st.checkbox("Ordre croissant", value=True)
 
     show_none = st.checkbox("Afficher les images sans annotation (None)", value=True)
 
@@ -54,14 +51,11 @@ def show():
         df = df[df["manual_annotation"].isin(manual_annotation)]
     if ai_annotation:
         df = df[df["ai_annotation"].isin(ai_annotation)]
-    print(0, df)
     if not show_none:
         df = df[df["ai_confidence"] >= confidence]
     else:
         df = df[(df["ai_confidence"].isna()) | (df["ai_confidence"] >= confidence)]
-    print(1, df)
     df["upload_date"] = pd.to_datetime(df["upload_date"])
-    print(2, df)
     df = df[
         (df["upload_date"].dt.date >= start_date) &
         (df["upload_date"].dt.date <= end_date)]

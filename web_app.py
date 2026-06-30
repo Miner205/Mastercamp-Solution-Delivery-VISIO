@@ -1,10 +1,8 @@
-import pandas as pd
 import os
-import sqlite3
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from views import accueil, historique, statistiques, gallery
+from views import accueil, historique, statistiques, gallery, a_propos, multi_upload
 from database import create_database
 
 #from metadata import extract_metadata
@@ -58,15 +56,17 @@ with st.sidebar:
     selected = option_menu(
         "VISIO",
         ["Accueil - Upload",
+                "Multi-Upload",
                 "Gallery",
                 "Historique",
                 "Statistiques",
                 "À propos"],
         icons=["house",
-                "image",
-                "clock-history",
-                "bar-chart",
-                "info-circle"],
+               "download",
+               "image",
+               "clock-history",
+               "bar-chart",
+               "info-circle"],
         default_index=0
     )
 
@@ -79,8 +79,9 @@ elif selected == "Statistiques":
     statistiques.show()
 elif selected == "Gallery":
     gallery.show()
-
+elif selected == "À propos":
+    a_propos.show()
+'''elif selected == "Multi-Upload":
+    multi_upload.show()'''
 
 #st.divider()
-
-
