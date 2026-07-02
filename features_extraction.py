@@ -353,6 +353,62 @@ def create_bin_image(image, contour_matrix, nb_x_area, nb_y_area, area_border=Fa
     return bin_image
 
 
+def arthur_extract_features(image_path):
+    extract_img = get_image(image_path)
+    extract_img_l = get_image_l(extract_img)
+    extract_img_no_bg = remove(extract_img)
+    extract_msk_bin = create_bin_mask(extract_img_no_bg)
+    extract_nb_area = compute_nb_area(extract_msk_bin)
+    extract_bin_matrix = create_contour_matrix(extract_img, extract_msk_bin, extract_nb_area[0], extract_nb_area[1])
+    extract_img_bin = create_bin_image(extract_img, extract_bin_matrix, extract_nb_area[0], extract_nb_area[1])
+
+    feature_file_size = get_file_size(image_path)
+
+    feature_img_size = get_image_size(extract_img)
+    feature_avg_r, feature_avg_g, feature_avg_b, (feature_min_r, feature_max_r), (feature_min_g, feature_max_g), (feature_min_b, feature_max_b) = get_image_color_stats(extract_img)
+    feature_rgb_histogram = get_image_histogram(extract_img)
+    feature_r_histogram = feature_rgb_histogram[0:256]
+    feature_g_histogram = feature_rgb_histogram[256:512]
+    feature_b_histogram = feature_rgb_histogram[512:768]
+    feature_hue_histogram = get_hue_histogram(extract_img)
+
+    feature_avg_l, (feature_min_l, feature_max_l) = get_image_l_stats(extract_img_l)
+    feature_l_histogram = get_image_histogram(extract_img_l)
+    feature_contrast = get_image_l_contrast(feature_max_l, feature_min_l)
+
+    feature_bin_histogram = get_image_histogram(extract_img_bin)
+    feature_bin_r_histogram = feature_bin_histogram[0:256]
+    feature_bin_g_histogram = feature_bin_histogram[256:512]
+    feature_bin_b_histogram = feature_bin_histogram[512:768]
+    feature_bin_hue_histogram = get_hue_histogram(extract_img_bin)
+
+    return {
+        "file_size": feature_file_size,
+        "width": feature_img_size[0],
+        "height": feature_img_size[1],
+        "avg_r": feature_avg_r,
+        "avg_g": feature_avg_g,
+        "avg_b": feature_avg_b,
+        "min_r": feature_min_r,
+        "max_r": feature_max_r,
+        "min_g": feature_min_g,
+        "max_g": feature_max_g,
+        "min_b": feature_min_b,
+        "max_b": feature_max_b,
+        "r_histogram": feature_r_histogram,
+        "g_histogram": feature_g_histogram,
+        "b_histogram": feature_b_histogram,
+        "hue_histogram": feature_hue_histogram,
+        "avg_l": feature_avg_l,
+        "l_histogram": feature_l_histogram,
+        "contrast": feature_contrast,
+        "bin_r_histogram": feature_bin_r_histogram,
+        "bin_g_histogram": feature_bin_g_histogram,
+        "bin_b_histogram": feature_bin_b_histogram,
+        "bin_hue_histogram": feature_bin_hue_histogram
+    }
+
+
 if __name__ == '__main__':
     file_size = get_file_size(default_image_path)
     print("file size:", file_size)

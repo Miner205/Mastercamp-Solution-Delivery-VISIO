@@ -2,6 +2,7 @@ import os
 import numpy as np
 import cv2
 from PIL import Image as PILImage
+from features_extraction import arthur_extract_features
 
 
 def _normalize_lighting(gray):
@@ -99,7 +100,7 @@ def extract_features(filepath):
 
     green_zone_max, green_zone_var = _hue_zone_features(arr)
 
-    return {
+    dict_features = {
         "file_size": file_size,
         "width": width,
         "height": height,
@@ -124,3 +125,8 @@ def extract_features(filepath):
         "green_zone_max": round(green_zone_max, 4),
         "green_zone_var": round(green_zone_var, 6),
     }
+
+    # Arthur features:
+    dict_features = arthur_extract_features(filepath) | dict_features
+
+    return dict_features
