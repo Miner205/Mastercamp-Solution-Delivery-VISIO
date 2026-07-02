@@ -2,11 +2,18 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import streamlit as st
+from streamlit_scroll_to_top import scroll_to_here
 
 from database import get_db_as_df
 
 
 def show():
+    if "scroll_to_top2" not in st.session_state:
+        st.session_state.scroll_to_top2 = False
+    if st.session_state.scroll_to_top2:
+        scroll_to_here(0, key="top2")
+        st.session_state.scroll_to_top2 = False
+
     st.title("Historique")
     df = get_db_as_df()
 
@@ -79,6 +86,12 @@ def show():
     cols_config["filepath"] = st.column_config.TextColumn(width="medium")
     cols_config['avg_l'] = st.column_config.NumberColumn(label="avg_luminance")
     st.dataframe(df.style.map(color_fct, subset=['manual_annotation']).map(color_red, subset=['avg_r', 'min_r', 'max_r']).map(color_green, subset=['avg_g', 'min_g', 'max_g']).map(color_blue, subset=['avg_b', 'min_b', 'max_b']), height="content", column_order=cols, column_config=cols_config)
+
+    _, mid, _ = st.columns([3, 2, 2])
+    with mid:
+        if df.size >= 30*15 and st.button("⬆️ Retour en haut"):
+            st.session_state.scroll_to_top2 = True
+            st.rerun()
 
 
 def color_fct(val):
