@@ -56,6 +56,10 @@ def show():
 
                 imag = features_extraction.get_image(filepath)
                 imag_l = features_extraction.get_image_l(imag)
+                dim = features_extraction.get_image_size(imag)
+                color_stats = features_extraction.get_image_color_stats(imag)
+                l_stats = features_extraction.get_image_l_stats(imag_l)
+                histog = features_extraction.get_image_histogram(imag)
                 db.insert_image((
                     initial_filename,
                     new_filename + '_' + str(k - 1) + extension,
@@ -66,26 +70,15 @@ def show():
                     None,
                     None,
                     features_extraction.get_file_size(filepath),
-                    features_extraction.get_image_size(imag)[0],
-                    features_extraction.get_image_size(imag)[1],
-                    features_extraction.get_image_color_stats(imag)[0],
-                    features_extraction.get_image_color_stats(imag)[1],
-                    features_extraction.get_image_color_stats(imag)[2],
-                    features_extraction.get_image_color_stats(imag)[3][0],
-                    features_extraction.get_image_color_stats(imag)[4][0],
-                    features_extraction.get_image_color_stats(imag)[5][0],
-                    features_extraction.get_image_color_stats(imag)[3][1],
-                    features_extraction.get_image_color_stats(imag)[4][1],
-                    features_extraction.get_image_color_stats(imag)[5][1],
-                    features_extraction.get_image_l_stats(imag_l)[0],
-                    features_extraction.get_image_l_stats(imag_l)[1][0],
-                    features_extraction.get_image_l_stats(imag_l)[1][1],
-                    str(features_extraction.get_image_histogram(imag)[0:256]),
-                    str(features_extraction.get_image_histogram(imag)[256:512]),
-                    str(features_extraction.get_image_histogram(imag)[512:768]),
-                    str(features_extraction.get_image_histogram(imag_l)),
-                    features_extraction.get_image_l_contrast(features_extraction.get_image_l_stats(imag_l)[1][1], features_extraction.get_image_l_stats(imag_l)[1][0]),
-                    str(features_extraction.get_hue_histogram(imag))
+                    dim[0], dim[1], #width & height
+                    color_stats[0], color_stats[1], color_stats[2], #avg rgb
+                    color_stats[3][0], color_stats[4][0], color_stats[5][0], #min rgb
+                    color_stats[3][1], color_stats[4][1], color_stats[5][1], #max rgb
+                    l_stats[0], l_stats[1][0], l_stats[1][1], #luminance
+                    str(histog[0:256]), str(histog[256:512]), str(histog[512:768]), #histograms rgb
+                    str(features_extraction.get_image_histogram(imag_l)), #histogram luminance
+                    features_extraction.get_image_l_contrast(l_stats[1][1], l_stats[1][0]), #contrast
+                    str(features_extraction.get_hue_histogram(imag)) #histogram hue/teinte with basic image
                 ))
 
             left_col2, center_col2, right_col2 = st.columns([1, 10, 1])
