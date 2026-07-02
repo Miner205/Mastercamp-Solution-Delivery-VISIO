@@ -12,15 +12,16 @@ DATA_FOLDER = "Data/web_app"
 def init_state():
     if "images_queue" not in st.session_state:
         st.session_state.images_queue = []
-
     if "index" not in st.session_state:
         st.session_state.index = 0
-
     if "left_stack" not in st.session_state:
         st.session_state.left_stack = []   # Vide
-
     if "right_stack" not in st.session_state:
         st.session_state.right_stack = []  # Pleine
+    if 'disabled' not in st.session_state:
+        st.session_state.disabled = False
+    if "uploader_key" not in st.session_state:
+        st.session_state.uploader_key = 0
 
 
 def reset_state():
@@ -30,22 +31,38 @@ def reset_state():
         st.session_state.left_stack = []
         st.session_state.right_stack = []
     st.session_state.other_p = False
+    st.session_state.disabled = False
+    st.session_state.uploader_key += 1
+
+
+def save_annotation(annot, hsh, fpath):
+    """
+    Fonction callback pour enregistrer l'annotation.
+    """
+    db.update_manual_annotation(annot, hsh)
+    if annot == "Vide":
+        st.session_state.left_stack.append(fpath)
+    else:
+        st.session_state.right_stack.append(fpath)
+
+    st.session_state.index += 1
 
 
 def show():
     init_state()
     if st.session_state.other_p:
         reset_state()
+
     left_col, center_col, right_col = st.columns([2, 18, 2])
 
     with left_col:
         st.markdown("### 🟢 Vide")
-        for img in st.session_state.left_stack[-5:]:
+        for img in st.session_state.left_stack[-8:]:
             st.image(img)
 
     with right_col:
         st.markdown("### 🔴 Pleine")
-        for img in st.session_state.right_stack[-5:]:
+        for img in st.session_state.right_stack[-8:]:
             st.image(img)
 
     with center_col:
@@ -53,13 +70,15 @@ def show():
         st.subheader("Upload plusieurs images en même temps")
 
         st.markdown("""<div><br><br></div>""", unsafe_allow_html=True)
-        uploaded_files = st.file_uploader("Déposer plusieurs images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+        uploaded_files = st.file_uploader("Déposer plusieurs images", type=["jpg", "jpeg", "png"], accept_multiple_files=True, disabled=st.session_state.disabled, key=f"uploader_{st.session_state.uploader_key}")
 
         if uploaded_files and not st.session_state.images_queue:
             for f in uploaded_files:
                 st.session_state.images_queue.append(f)
 
         if st.session_state.index < len(st.session_state.images_queue):
+            st.session_state.disabled = True
+
             current_file = st.session_state.images_queue[st.session_state.index]
 
             initial_filename = current_file.name
@@ -76,13 +95,12 @@ def show():
                 k += 1
 
             img_hash = db.compute_uploaded_file_hash(current_file)
-            annotation = None
 
             if db.image_hash_exists(img_hash):
-                st.warning(f"{current_file.name} est déjà présente dans la database.")
-                filepath = db.get_filepath_from_hash(img_hash)  # not necessary but just in case.
-                st.session_state.index += 1
-                st.rerun()
+                st.warning(f"Cette image est déjà présente dans la database - vous devez cependant la réannoter.")
+                filepath = db.get_filepath_from_hash(img_hash)
+                #st.session_state.index += 1
+                #st.rerun()
             else:
                 with open(filepath, "wb") as f:
                     f.write(current_file.getbuffer())
@@ -99,7 +117,7 @@ def show():
                     img_hash,
                     filepath,
                     datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    annotation,
+                    None, # Annotation
                     None,
                     None,
                     features_extraction.get_file_size(filepath),
@@ -123,28 +141,14 @@ def show():
                 with center_col3:
                     st.subheader("annotation manuelle")
                     col1, col2 = st.columns(2)
-                    annotation = None
                     with col1:
-                        if st.button("🟢 Vide"):
-                            annotation = "Vide"
-                            print("vvv", annotation)
+                        st.button("🟢 Vide", on_click=save_annotation, args=("Vide", img_hash, filepath))
+
                     with col2:
-                        if st.button("🔴 Pleine"):
-                            annotation = "Pleine"
-                            print("vvvccc", annotation)
-                    print("kkk", annotation)
-            print("gggg", annotation)
-            if annotation:
-                db.update_manual_annotation(annotation, img_hash)
-                if annotation == "Vide":
-                    st.session_state.left_stack.append(filepath)
-                else:
-                    st.session_state.right_stack.append(filepath)
-
-                st.success(f"Annotation '{annotation}' enregistrée.")
-
-                st.session_state.index += 1
-                st.rerun()
+                        st.button("🔴 Pleine", on_click=save_annotation, args=("Pleine", img_hash, filepath))
 
         elif st.session_state.images_queue:
             st.success("Toutes les images ont été annotées !")
+            _, middle, _ = st.columns(3)
+            with middle:
+                st.button("Appuyez ici pour réinitialisez la page et pouvoir upload de nouvelles images.", on_click=reset_state)

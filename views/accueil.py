@@ -46,7 +46,7 @@ def show():
             annotation = None
 
             if db.image_hash_exists(img_hash):
-                st.error("Cette image est déjà présente dans la database.")
+                st.warning("Cette image est déjà présente dans la database - vous pouvez cependant la réannoter.")
                 filepath = db.get_filepath_from_hash(img_hash)
             else:
                 with open(filepath, "wb") as f:

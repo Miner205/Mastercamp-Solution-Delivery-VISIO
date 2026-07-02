@@ -46,7 +46,7 @@ def show():
     if not show_none:
         df = df[df["manual_annotation"].notna() & df["ai_annotation"].notna()]
     if search:
-        df = df[df["filename"].str.contains(search, case=False)]
+        df = df[df["initial_filename"].str.contains(search, case=False)]
     if manual_annotation:
         df = df[df["manual_annotation"].isin(manual_annotation)]
     if ai_annotation:
@@ -63,13 +63,13 @@ def show():
     columns = {
         "Date": "upload_date",
         "Confiance IA": "ai_confidence",
-        "Nom": "filename",
+        "Nom": "initial_filename",
         "Annotation IA": "ai_annotation",
         "Annotation manuelle": "manual_annotation"}
     df = df.sort_values(by=columns[sort_by], ascending=ascending)
     ##Fin Partie Filtres
 
-    cols = ("filename", "initial_filename", "filepath", "upload_date", "manual_annotation",
+    cols = ("initial_filename", "filename", "filepath", "upload_date", "manual_annotation",
             "ai_annotation", "ai_confidence", "file_size", "width",
             "height", "avg_r", "avg_g", "avg_b", "avg_l", "contrast")
     cols_config = dict()
@@ -83,18 +83,18 @@ def show():
 
 def color_fct(val):
     if val == "Vide":
-        color = 'green'
+        color = "green"
     elif val=="Pleine":
-        color = 'red'
+        color = "red"
     else:
-        color = 'black'
-    return f'background-color: {color}'
+        color = "grey"
+    return f'background-color: {color}; color: white'
 def color_red(r=0, g=0, b=0):
     color = f"rgb({r}, {g}, {b})"
-    return f'background-color: {color}'
+    return f'background-color: {color}; color: white'
 def color_green(g=0, r=0, b=0):
     color = f"rgb({r}, {g}, {b})"
-    return f'background-color: {color}'
+    return f'background-color: {color}; color: white'
 def color_blue(b=0, g=0, r=0):
     color = f"rgb({r}, {g}, {b})"
-    return f'background-color: {color}'
+    return f'background-color: {color}; color: white'

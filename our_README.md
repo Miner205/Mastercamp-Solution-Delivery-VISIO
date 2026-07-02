@@ -21,3 +21,8 @@ pip install streamlit-scroll-to-top
 pip install pillow
 pip install "rembg[gpu]" (for Nvidia) or pip install "rembg[cpu]" or ... cf here https://github.com/danielgatis/rembg#installation
 ...
+
+
+# Keyboard shortcuts pour les annotations manuelles :
+- Vide = 
+- Pleine = 

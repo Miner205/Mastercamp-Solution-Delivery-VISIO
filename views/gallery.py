@@ -55,7 +55,7 @@ def show():
     if not show_none:
         df = df[df["manual_annotation"].notna() & df["ai_annotation"].notna()]
     if search:
-        df = df[df["filename"].str.contains(search, case=False)]
+        df = df[df["initial_filename"].str.contains(search, case=False)]
     if manual_annotation:
         df = df[df["manual_annotation"].isin(manual_annotation)]
     if ai_annotation:
@@ -72,7 +72,7 @@ def show():
     columns = {
         "Date": "upload_date",
         "Confiance IA": "ai_confidence",
-        "Nom": "filename",
+        "Nom": "initial_filename",
         "Annotation IA": "ai_annotation",
         "Annotation manuelle": "manual_annotation"}
     df = df.sort_values(by=columns[sort_by], ascending=ascending)
@@ -106,7 +106,7 @@ def show():
         conf = row.ai_confidence if row.ai_confidence is not None else 0
         with col:
             st.image(row.filepath, width="stretch")
-            st.markdown(f"**{row.filename}**")
+            st.markdown(f"**{row.initial_filename}**")
             st.write(f"📅 {row.upload_date}")
             st.write(f"Annotation manuelle : {row.manual_annotation}")
             st.write(f"Annotation IA : {row.ai_annotation}")
