@@ -20,17 +20,17 @@ def get_image_size(image):
 
 
 def get_image_color_stats(image):
-    max_r = 0
-    min_r = 255
-    avg_r = 0
+    r_max = 0
+    r_min = 255
+    r_avg = 0
 
-    max_g = 0
-    min_g = 255
-    avg_g = 0
+    g_max = 0
+    g_min = 255
+    g_avg = 0
 
-    max_b = 0
-    min_b = 255
-    avg_b = 0
+    b_max = 0
+    b_min = 255
+    b_avg = 0
 
     width, height = image.size
 
@@ -38,26 +38,26 @@ def get_image_color_stats(image):
         for y in range(height):
             pixel = image.getpixel((x, y))
 
-            if pixel[0] > max_r:
-                max_r = pixel[0]
-            if pixel[0] < min_r:
-                min_r = pixel[0]
-            avg_r += pixel[0]
+            if pixel[0] > r_max:
+                r_max = pixel[0]
+            if pixel[0] < r_min:
+                r_min = pixel[0]
+            r_avg += pixel[0]
 
-            if pixel[1] > max_g:
-                max_g = pixel[1]
-            if pixel[1] < min_r:
-                min_g = pixel[1]
-            avg_g += pixel[1]
+            if pixel[1] > g_max:
+                g_max = pixel[1]
+            if pixel[1] < g_min:
+                g_min = pixel[1]
+            g_avg += pixel[1]
 
-            if pixel[2] > max_b:
-                max_b = pixel[2]
-            if pixel[2] < min_b:
-                min_b = pixel[2]
-            avg_b += pixel[2]
+            if pixel[2] > b_max:
+                b_max = pixel[2]
+            if pixel[2] < b_min:
+                b_min = pixel[2]
+            b_avg += pixel[2]
 
     nb_pixels = width*height
-    return avg_r/nb_pixels, avg_g/nb_pixels, avg_b/nb_pixels, (min_r, max_r), (min_g, max_g), (min_b, max_b)
+    return r_avg/nb_pixels, g_avg/nb_pixels, b_avg/nb_pixels, (r_min, r_max), (g_min, g_max), (b_min, g_max)
 
 
 def get_image_l(image):
@@ -65,9 +65,9 @@ def get_image_l(image):
 
 
 def get_image_l_stats(image):
-    max_l = 0
-    min_l = 255
-    avg_l = 0
+    l_max = 0
+    l_min = 255
+    l_avg = 0
 
     image_size = image.size
 
@@ -75,26 +75,46 @@ def get_image_l_stats(image):
         for y in range(image_size[1]):
             pixel = image.getpixel((x, y))
 
-            if pixel > max_l:
-                max_l = pixel
-            if pixel < min_l:
-                min_l = pixel
-            avg_l += pixel
+            if pixel > l_max:
+                l_max = pixel
+            if pixel < l_min:
+                l_min = pixel
+            l_avg += pixel
 
-    return avg_l/(image_size[0] * image_size[1]), (min_l, max_l)
+    return l_avg/(image_size[0] * image_size[1]), (l_min, l_max)
 
 
 def get_image_histogram(image):
+    if image.mode == "RGBA":
+        width, height = image.size
+        hist = [0]*768
+        for x in range(width):
+            for y in range(height):
+                r, g, b, a = image.getpixel((x, y))
+                if a != 0:
+                    hist[r] += 1
+                    hist[g + 256] += 1
+                    hist[b + 512] += 1
+        return hist
+
     return image.histogram()
 
 
-def get_image_l_contrast(max_l, min_l, avg_l):
-    return (max_l - min_l)/avg_l
+def get_image_l_contrast(l_max, l_min):
+    return (l_max - l_min)/(l_max + l_min)
 
 
 def get_hue_pixel(image, x, y):
-    r, g, b = image.getpixel((x, y))[0:3]
-    return math.atan2(math.sqrt(3)*(g - b), 2*r - g - b)*(180/math.pi)
+    if image.mode == "RGBA":
+        r, g, b, a = image.getpixel((x, y))
+        if a == 0:
+            return 360
+    else:
+        r, g, b = image.getpixel((x, y))
+    pixel_hue = round(math.atan2(math.sqrt(3)*(g - b), 2*r - g - b)*(180/math.pi))
+    if pixel_hue < 0:
+        return 360 + pixel_hue
+    return pixel_hue
 
 
 def create_bin_mask(image):
@@ -112,7 +132,7 @@ def compute_nb_area():
     pass
 
 
-def create_bin_image_old(image, bin_mask, nb_x_area, nb_y_area, area_border=False):
+def create_bin_image_old(image, bin_mask, nb_x_area, nb_y_area, area_border=False):  # not used
     width, height = image.size
     bin_image = Image.new("RGBA", (width, height))
     area_width = width//nb_x_area
@@ -142,7 +162,7 @@ def create_bin_image_old(image, bin_mask, nb_x_area, nb_y_area, area_border=Fals
     return bin_image
 
 
-def contour_matrix_test(image, bin_mask, nb_x_area, nb_y_area):
+def create_contour_matrix(image, bin_mask, nb_x_area, nb_y_area):
     width, height = image.size
     contour_matrix = [[0 for _ in range(nb_y_area)] for _ in range(nb_x_area)]
     area_width = width//nb_x_area
@@ -156,17 +176,71 @@ def contour_matrix_test(image, bin_mask, nb_x_area, nb_y_area):
                     contour_matrix[area_x][area_y] += bin_mask.getpixel((area_width*area_x + x, area_height*area_y + y))//255
             contour_matrix[area_x][area_y] = (contour_matrix[area_x][area_y]*8)//(area_width*area_height)
 
-    for distance in range(7):
+    for distance in range(3):
         for area_x in range(nb_x_area):
             for area_y in range(nb_y_area):
-                if area_y > 0 and contour_matrix[area_x][area_y] < contour_matrix[area_x][area_y - 1] - 2:
+                if area_y > 0 and contour_matrix[area_x][area_y] <= contour_matrix[area_x][area_y - 1] - 2:
                     contour_matrix[area_x][area_y] = contour_matrix[area_x][area_y - 1] - 1
-                if area_x > 0 and contour_matrix[area_x][area_y] < contour_matrix[area_x - 1][area_y] - 4:
+                if area_x > 0 and contour_matrix[area_x][area_y] <= contour_matrix[area_x - 1][area_y] - 4:
                     contour_matrix[area_x][area_y] = contour_matrix[area_x - 1][area_y] - 2
-                if area_x < nb_x_area - 1 and contour_matrix[area_x][area_y] < contour_matrix[area_x + 1][area_y] - 4:
+                if area_x < nb_x_area - 1 and contour_matrix[area_x][area_y] <= contour_matrix[area_x + 1][area_y] - 4:
                     contour_matrix[area_x][area_y] = contour_matrix[area_x + 1][area_y] - 2
-                if area_y < nb_y_area - 1 and contour_matrix[area_x][area_y] < contour_matrix[area_x][area_y + 1] - 6:
+                if area_y < nb_y_area - 1 and contour_matrix[area_x][area_y] <= contour_matrix[area_x][area_y + 1] - 6:
                     contour_matrix[area_x][area_y] = contour_matrix[area_x][area_y + 1] - 3
+
+    return contour_matrix
+
+
+def test_contour_matrix():  # not used
+    nb_x_area, nb_y_area = 24, 24
+    contour_matrix = [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ]
+
+    for distance in range(3):
+        for area_x in range(nb_x_area):
+            for area_y in range(nb_y_area):
+                if area_y > 0 and contour_matrix[area_x][area_y] <= contour_matrix[area_x][area_y - 1] - 2:
+                    contour_matrix[area_x][area_y] = contour_matrix[area_x][area_y - 1] - 1
+                if area_x > 0 and contour_matrix[area_x][area_y] <= contour_matrix[area_x - 1][area_y] - 4:
+                    contour_matrix[area_x][area_y] = contour_matrix[area_x - 1][area_y] - 2
+                if area_x < nb_x_area - 1 and contour_matrix[area_x][area_y] <= contour_matrix[area_x + 1][area_y] - 4:
+                    contour_matrix[area_x][area_y] = contour_matrix[area_x + 1][area_y] - 2
+                if area_y < nb_y_area - 1 and contour_matrix[area_x][area_y] <= contour_matrix[area_x][area_y + 1] - 6:
+                    contour_matrix[area_x][area_y] = contour_matrix[area_x][area_y + 1] - 3
+        print()
+        print(str(distance) + ":")
+        for area_y in range(nb_y_area):
+            if area_y != 0:
+                print()
+            for area_x in range(nb_x_area):
+                if contour_matrix[area_x][area_y] == 0:
+                    print("\t ", end="")
+                else:
+                    print("\t" + str(contour_matrix[area_x][area_y]), end="")
 
     return contour_matrix
 
@@ -189,6 +263,17 @@ def create_bin_image(image, contour_matrix, nb_x_area, nb_y_area, area_border=Fa
                             bin_image.putpixel((area_width*area_x + x, area_height*area_y + y), image.getpixel((area_width*area_x + x, area_height*area_y + y)))
 
     return bin_image
+
+
+def get_hue_histogram(image):
+    width, height = image.size
+    hue_hist = [0]*360
+    for x in range(width):
+        for y in range(height):
+            pixel_hue = get_hue_pixel(image, x, y)
+            if pixel_hue != 360:
+                hue_hist[pixel_hue] += 1
+    return hue_hist
 
 
 if __name__ == '__main__':
@@ -217,7 +302,7 @@ if __name__ == '__main__':
     img_histogram = get_image_histogram(img_l)
     print(img_histogram)
 
-    contrast = get_image_l_contrast(max_l, min_l, avg_l)
+    contrast = get_image_l_contrast(max_l, min_l)
     print(contrast)
 
     img_no_bg = remove(img)
@@ -226,9 +311,20 @@ if __name__ == '__main__':
     msk_bin = create_bin_mask(img_no_bg)
     msk_bin.show()
 
-    bin_matrix = contour_matrix_test(img, msk_bin, 8, 8)
+    bin_matrix = create_contour_matrix(img, msk_bin, 8, 8)
     print(bin_matrix)
 
     img_bin = create_bin_image(img, bin_matrix, 8, 8)
     img_bin.show()
 
+    img_bin_histogram = get_image_histogram(img_bin)
+    print(img_bin_histogram)
+    print(img_bin_histogram[0:256], img_bin_histogram[512:768])
+    print(sum(img_bin_histogram[0:256]))
+
+    hue_histogram = get_hue_histogram(img_bin)
+    print(hue_histogram)
+    print(sum(hue_histogram))
+
+    # test contour matrix repartition
+    #test_contour_matrix()
