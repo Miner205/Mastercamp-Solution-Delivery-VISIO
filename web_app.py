@@ -70,18 +70,25 @@ with st.sidebar:
         default_index=0
     )
 
+if "other_p" not in st.session_state:
+    st.session_state.other_p = False
 
 if selected == "Accueil - Upload":
+    st.session_state.other_p = True
     accueil.show()
 elif selected == "Historique":
+    st.session_state.other_p = True
     historique.show()
 elif selected == "Statistiques":
+    st.session_state.other_p = True
     statistiques.show()
 elif selected == "Gallery":
+    st.session_state.other_p = True
     gallery.show()
 elif selected == "À propos":
+    st.session_state.other_p = True
     a_propos.show()
-'''elif selected == "Multi-Upload":
-    multi_upload.show()'''
+elif selected == "Multi-Upload":
+    multi_upload.show()
 
 #st.divider()

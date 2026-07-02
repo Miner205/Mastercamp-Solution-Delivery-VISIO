@@ -30,6 +30,24 @@ def image_hash_exists(image_hash):
     return exists
 
 
+def get_filepath_from_hash(image_hash):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT filepath FROM images WHERE image_hash = ? LIMIT 1", (image_hash,))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+
+def get_data_from_hash(image_hash):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM images WHERE image_hash = ? LIMIT 1", (image_hash,))
+    result = cursor.fetchone()
+    conn.close()
+    return result if result else None
+
+
 def get_db_as_df():
     conn = sqlite3.connect(DB_NAME)
     df = pd.read_sql_query("SELECT * FROM images", conn)
@@ -44,6 +62,7 @@ def create_database():
                                                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                                                             image_hash TEXT UNIQUE,
                                                             filename TEXT,
+                                                            initial_filename TEXT,
                                                             filepath TEXT,
                                                             upload_date TEXT,
                                                             manual_annotation TEXT,
@@ -54,7 +73,22 @@ def create_database():
                                                             height INTEGER,
                                                             avg_r INTEGER,
                                                             avg_g INTEGER,
-                                                            avg_b INTEGER)""")
+                                                            avg_b INTEGER,
+                                                            min_r INTEGER,
+                                                            min_g INTEGER,
+                                                            min_b INTEGER,
+                                                            max_r INTEGER,
+                                                            max_g INTEGER,
+                                                            max_b INTEGER,
+                                                            avg_l INTEGER,
+                                                            min_l INTEGER,
+                                                            max_l INTEGER,
+                                                            histogram_r TEXT,
+                                                            histogram_g TEXT,
+                                                            histogram_b TEXT,
+                                                            histogram_l TEXT,
+                                                            contrast REAL,
+                                                            hue_histogram TEXT)""")
     conn.commit()
     conn.close()
 
@@ -62,15 +96,15 @@ def create_database():
 def insert_image(data):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO images(filename, image_hash, filepath, upload_date, manual_annotation, ai_annotation, ai_confidence, file_size, width, height, avg_r, avg_g, avg_b) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
+    cursor.execute("INSERT INTO images(initial_filename, filename, image_hash, filepath, upload_date, manual_annotation, ai_annotation, ai_confidence, file_size, width, height, avg_r, avg_g, avg_b, min_r, min_g, min_b, max_r, max_g, max_b, avg_l, min_l, max_l, histogram_r, histogram_g, histogram_b, histogram_l, contrast, hue_histogram) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", data)
     conn.commit()
     conn.close()
 
 
-def update_manual_annotation(m_annotation, hash):
+def update_manual_annotation(m_annotation, image_hash):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE images SET manual_annotation=? WHERE image_hash=?", (m_annotation, hash))
+        "UPDATE images SET manual_annotation=? WHERE image_hash=?", (m_annotation, image_hash))
     conn.commit()
     conn.close()

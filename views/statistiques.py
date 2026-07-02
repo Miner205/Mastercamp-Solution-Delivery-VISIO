@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -63,9 +62,7 @@ def show():
          "Corrélations", "Couleurs moyennes", "IA vs Manuel"]
     )
 
-    # ------------------------------------------------------------------ #
-    # 1. Répartition vide / pleine
-    # ------------------------------------------------------------------ #
+    ### Répartition vide / pleine
     with tab_rep:
         st.subheader("Répartition des annotations manuelles")
         counts = df["manual_annotation"].value_counts()
@@ -74,9 +71,7 @@ def show():
         for col, (label, n) in zip(cols, counts.items()):
             col.metric(str(label), n, f"{100 * n / counts.sum():.0f} %")
 
-    # ------------------------------------------------------------------ #
-    # 2. Distribution de chaque feature selon vide / pleine
-    # ------------------------------------------------------------------ #
+    ### Distribution de chaque feature selon vide / pleine
     with tab_dist:
         st.subheader("Comment chaque feature se répartit selon le statut")
         feat = st.selectbox(
@@ -108,9 +103,7 @@ def show():
         recap.columns = ["Moyenne", "Médiane", "Écart-type", "Effectif"]
         st.dataframe(recap.style.format("{:.2f}"))
 
-    # ------------------------------------------------------------------ #
-    # 3. Relation entre deux features, colorée par le statut
-    # ------------------------------------------------------------------ #
+    ### Relation entre deux features, colorée par le statut
     with tab_rel:
         st.subheader("Nuage de points entre deux features")
         c1, c2 = st.columns(2)
@@ -123,9 +116,7 @@ def show():
         st.caption("Si les couleurs (vide/pleine) se séparent visuellement, ces deux features "
                    "permettent de distinguer une poubelle vide d'une pleine.")
 
-    # ------------------------------------------------------------------ #
-    # 4. Corrélations
-    # ------------------------------------------------------------------ #
+    ### Corrélations
     with tab_corr:
         st.subheader("Corrélations entre features")
         corr = df[features].corr()
@@ -153,9 +144,7 @@ def show():
         else:
             st.info("Le lien feature/cible n'est calculé que pour un cas binaire (vide vs pleine).")
 
-    # ------------------------------------------------------------------ #
-    # 5. Couleur moyenne par classe
-    # ------------------------------------------------------------------ #
+    ### Couleur moyenne par classe
     with tab_couleur:
         st.subheader("Couleur moyenne des images selon le statut")
         if all(c in df.columns for c in ["avg_r", "avg_g", "avg_b"]):
@@ -177,9 +166,7 @@ def show():
         else:
             st.info("Colonnes de couleur (avg_r, avg_g, avg_b) absentes.")
 
-    # ------------------------------------------------------------------ #
-    # 6. IA vs annotation manuelle
-    # ------------------------------------------------------------------ #
+    ### IA vs annotation manuelle
     with tab_ia:
         st.subheader("Confiance de l'IA selon le statut réel")
         if "ai_confidence" in df.columns and df["ai_confidence"].notna().any():

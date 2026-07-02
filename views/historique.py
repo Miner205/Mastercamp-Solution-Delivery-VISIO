@@ -69,14 +69,16 @@ def show():
     df = df.sort_values(by=columns[sort_by], ascending=ascending)
     ##Fin Partie Filtres
 
-    cols = ("filename", "filepath", "upload_date", "manual_annotation",
+    cols = ("filename", "initial_filename", "filepath", "upload_date", "manual_annotation",
             "ai_annotation", "ai_confidence", "file_size", "width",
-            "height", "avg_r", "avg_g", "avg_b")
+            "height", "avg_r", "avg_g", "avg_b", "avg_l", "contrast")
     cols_config = dict()
     cols_config["manual_annotation"] = st.column_config.TextColumn(width=105)
     cols_config["filename"] = st.column_config.TextColumn(width="medium")
+    cols_config["initial_filename"] = st.column_config.TextColumn(width="medium")
     cols_config["filepath"] = st.column_config.TextColumn(width="medium")
-    st.dataframe(df.style.map(color_fct, subset=['manual_annotation']).map(color_red, subset=['avg_r']).map(color_green, subset=['avg_g']).map(color_blue, subset=['avg_b']), height="content", column_order=cols, column_config=cols_config)
+    cols_config['avg_l'] = st.column_config.NumberColumn(label="avg_luminance")
+    st.dataframe(df.style.map(color_fct, subset=['manual_annotation']).map(color_red, subset=['avg_r', 'min_r', 'max_r']).map(color_green, subset=['avg_g', 'min_g', 'max_g']).map(color_blue, subset=['avg_b', 'min_b', 'max_b']), height="content", column_order=cols, column_config=cols_config)
 
 
 def color_fct(val):

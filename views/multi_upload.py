@@ -9,27 +9,60 @@ import features_extraction
 DATA_FOLDER = "Data/web_app"
 
 
+def init_state():
+    if "images_queue" not in st.session_state:
+        st.session_state.images_queue = []
+
+    if "index" not in st.session_state:
+        st.session_state.index = 0
+
+    if "left_stack" not in st.session_state:
+        st.session_state.left_stack = []   # Vide
+
+    if "right_stack" not in st.session_state:
+        st.session_state.right_stack = []  # Pleine
+
+
+def reset_state():
+    if st.session_state.images_queue:
+        st.session_state.images_queue = []
+        st.session_state.index = 0
+        st.session_state.left_stack = []
+        st.session_state.right_stack = []
+    st.session_state.other_p = False
+
+
 def show():
-    left_col, center_col, right_col = st.columns([1, 10, 1])
+    init_state()
+    if st.session_state.other_p:
+        reset_state()
+    left_col, center_col, right_col = st.columns([2, 18, 2])
+
+    with left_col:
+        st.markdown("### 🟢 Vide")
+        for img in st.session_state.left_stack[-5:]:
+            st.image(img)
+
+    with right_col:
+        st.markdown("### 🔴 Pleine")
+        for img in st.session_state.right_stack[-5:]:
+            st.image(img)
+
     with center_col:
-        st.title("Web App VISIO - Wild Dump Prevention")
-        st.subheader("Détection de l'état des poubelles")
-
-        st.markdown("""
-            <div class='green-title'>
-            Une ville plus propre,
-            des déchets mieux gérés.
-            </div>
-            """,
-                    unsafe_allow_html=True)
-
-        # st.image("assets/hero.png")
+        st.title("Multi-Upload")
+        st.subheader("Upload plusieurs images en même temps")
 
         st.markdown("""<div><br><br></div>""", unsafe_allow_html=True)
-        uploaded_file = st.file_uploader("Déposer une image de poubelle", type=["jpg", "jpeg", "png"])
+        uploaded_files = st.file_uploader("Déposer plusieurs images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
-        if uploaded_file:
-            initial_filename = uploaded_file.name
+        if uploaded_files and not st.session_state.images_queue:
+            for f in uploaded_files:
+                st.session_state.images_queue.append(f)
+
+        if st.session_state.index < len(st.session_state.images_queue):
+            current_file = st.session_state.images_queue[st.session_state.index]
+
+            initial_filename = current_file.name
             extension = '.' + initial_filename.split(".")[-1]
 
             # File naming convention : Source_Type_Timestamp_Code ; code: to avoid collision just in case.
@@ -42,17 +75,17 @@ def show():
                 filepath = os.path.join(DATA_FOLDER, new_filename + '_' + str(k) + extension)
                 k += 1
 
-            img_hash = db.compute_uploaded_file_hash(uploaded_file)
+            img_hash = db.compute_uploaded_file_hash(current_file)
             annotation = None
 
             if db.image_hash_exists(img_hash):
-                st.error("Cette image est déjà présente dans la database.")
-                filepath = db.get_filepath_from_hash(img_hash)
+                st.warning(f"{current_file.name} est déjà présente dans la database.")
+                filepath = db.get_filepath_from_hash(img_hash)  # not necessary but just in case.
+                st.session_state.index += 1
+                st.rerun()
             else:
                 with open(filepath, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-
-                st.success("Image enregistrée.")
+                    f.write(current_file.getbuffer())
 
                 imag = features_extraction.get_image(filepath)
                 imag_l = features_extraction.get_image_l(imag)
@@ -90,6 +123,7 @@ def show():
 
             left_col2, center_col2, right_col2 = st.columns([1, 10, 1])
             with center_col2:
+                st.markdown("### Image à annoter")
                 st.image(filepath, width="stretch")
 
                 left_col3, center_col3, right_col3 = st.columns(3)
@@ -100,61 +134,24 @@ def show():
                     with col1:
                         if st.button("🟢 Vide"):
                             annotation = "Vide"
+                            print("vvv", annotation)
                     with col2:
                         if st.button("🔴 Pleine"):
                             annotation = "Pleine"
-
+                            print("vvvccc", annotation)
+                    print("kkk", annotation)
+            print("gggg", annotation)
             if annotation:
                 db.update_manual_annotation(annotation, img_hash)
+                if annotation == "Vide":
+                    st.session_state.left_stack.append(filepath)
+                else:
+                    st.session_state.right_stack.append(filepath)
+
                 st.success(f"Annotation '{annotation}' enregistrée.")
 
-            data = db.get_data_from_hash(img_hash)
-            (id_, image_hash, filename, initial_filename, filepath, upload_date,
-                manual_annotation, ai_annotation, ai_confidence,
-                file_size, width, height,
-                avg_r, avg_g, avg_b,
-                min_r, min_g, min_b,
-                max_r, max_g, max_b,
-                avg_l, min_l, max_l,
-                histogram_r, histogram_g, histogram_b,
-                histogram_l,
-                contrast,
-                hue_histogram,) = data
-            st.title("Détails de l'image")
-            with st.expander("Général", expanded=True):
-                st.write("ID :", id_)
-                st.write("Hash :", image_hash)
-                st.write("Nom du fichier :", filename)
-                st.write("Nom d'origine du fichier :", initial_filename)
-                st.write("Chemin d'accès du fichier :", filepath)
-                st.write("Date d'upload :", upload_date)
-                st.write("Taille du fichier :", f"{file_size} bytes")
-                st.write("Dimension de l'image :", f"{width} x {height}")
-            with st.expander("Annotations", expanded=True):
-                st.write("Annotation manuelle :", manual_annotation)
-                st.write("Annotation IA :", ai_annotation)
-                st.write("Confiance IA :", ai_confidence)
-            with st.expander("RGB", expanded=True):
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Rouge Moyen :", avg_r)
-                col2.metric("Vert Moyen :", avg_g)
-                col3.metric("Bleu Moyen :", avg_b)
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Rouge Min", min_r)
-                col2.metric("Vert Min :", min_g)
-                col3.metric("Bleu Min :", min_b)
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Rouge Max :", max_r)
-                col2.metric("Vert Max :", max_g)
-                col3.metric("Bleu Max :", max_b)
-            with st.expander("Luminance"):
-                st.metric("Moyenne :", avg_l)
-                st.metric("Min :", min_l)
-                st.metric("Max :", max_l)
-                st.metric("Contraste :", contrast)
-            with st.expander("Histogrammes"):
-                st.write("Rouge :", histogram_r)
-                st.write("Vert :", histogram_g)
-                st.write("Bleu :", histogram_b)
-                st.write("Luminance :", histogram_l)
-                st.write("Teinte :", hue_histogram)
+                st.session_state.index += 1
+                st.rerun()
+
+        elif st.session_state.images_queue:
+            st.success("Toutes les images ont été annotées !")
